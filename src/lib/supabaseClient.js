@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Public project URL fallback to keep auth available if host env injection fails.
+const DEFAULT_SUPABASE_URL = 'https://xnjeifzdbcdklthlfiee.supabase.co'
+
 const supabaseUrl = (
 	import.meta.env.VITE_SUPABASE_URL ||
+	import.meta.env.VITE_PUBLIC_SUPABASE_URL ||
 	import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
 	import.meta.env.SUPABASE_URL ||
-	''
+	DEFAULT_SUPABASE_URL
 ).trim()
 
 const supabaseAnonKey = (
