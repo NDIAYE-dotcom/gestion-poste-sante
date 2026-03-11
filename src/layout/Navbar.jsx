@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import './Navbar.css'
 
-export function Navbar({ healthPostName, pageTitle, notifications = [], onNavigate }) {
+export function Navbar({ healthPostName, pageTitle, notifications = [], onNavigate, currentUserEmail, onSignOut }) {
   const [isOpen, setIsOpen] = useState(false)
   const [readIds, setReadIds] = useState(new Set())
   const notifyRef = useRef(null)
   const unreadCount = notifications.filter((item) => !readIds.has(item.id)).length
+  const avatarLabel = (currentUserEmail || 'AD').slice(0, 2).toUpperCase()
 
   const handleItemClick = (item) => {
     setReadIds((prev) => new Set([...prev, item.id]))
@@ -116,11 +117,14 @@ export function Navbar({ healthPostName, pageTitle, notifications = [], onNaviga
         </div>
 
         <div className="navbar__profile">
-          <span className="navbar__avatar">AD</span>
+          <span className="navbar__avatar">{avatarLabel}</span>
           <div>
-            <strong>Admin</strong>
-            <p>Responsable poste</p>
+            <strong>{currentUserEmail || 'Admin'}</strong>
+            <p>Acces securise</p>
           </div>
+          <button type="button" className="navbar__logout" onClick={onSignOut}>
+            Deconnexion
+          </button>
         </div>
       </div>
     </header>

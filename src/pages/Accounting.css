@@ -3,6 +3,10 @@
   gap: 1rem;
 }
 
+.accounting .panel {
+  min-width: 0;
+}
+
 .accounting__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -36,7 +40,55 @@
 }
 
 .accounting .table-wrap table {
-  min-width: 380px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .accounting .table-wrap {
+    overflow-x: visible;
+  }
+
+  .accounting .table-wrap table,
+  .accounting .table-wrap thead,
+  .accounting .table-wrap tbody,
+  .accounting .table-wrap tr,
+  .accounting .table-wrap td {
+    display: block;
+    width: 100%;
+  }
+
+  .accounting .table-wrap thead {
+    display: none;
+  }
+
+  .accounting .table-wrap tr {
+    background: #f8fbfb;
+    border: 1px solid #dce8e6;
+    border-radius: 10px;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .accounting .table-wrap td {
+    border-bottom: 1px dashed #d9e5e3;
+    padding: 0.42rem 0;
+  }
+
+  .accounting .table-wrap td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .accounting .table-wrap td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.12rem;
+    color: #5a7579;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 }
 
 @media (max-width: 480px) {
@@ -46,5 +98,9 @@
 
   .accounting__form {
     grid-template-columns: 1fr;
+  }
+
+  .stat-card strong {
+    font-size: 1.15rem;
   }
 }

@@ -89,10 +89,10 @@ export function Accounting({ transactions, onAddTransaction }) {
             <tbody>
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
-                  <td>{transaction.type === 'income' ? 'Entree' : 'Depense'}</td>
-                  <td>{transaction.label}</td>
-                  <td>{transaction.amount.toLocaleString()} FCFA</td>
-                  <td>{transaction.date}</td>
+                  <td data-label="Type">{transaction.type === 'income' ? 'Entree' : 'Depense'}</td>
+                  <td data-label="Libelle">{transaction.label}</td>
+                  <td data-label="Montant">{transaction.amount.toLocaleString()} FCFA</td>
+                  <td data-label="Date">{transaction.date}</td>
                 </tr>
               ))}
             </tbody>

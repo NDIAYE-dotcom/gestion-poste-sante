@@ -66,12 +66,20 @@ create table if not exists health_staff_members (
   created_at timestamptz not null default now()
 );
 
+create table if not exists health_app_settings (
+  setting_key text primary key,
+  setting_value text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table health_patients enable row level security;
 alter table health_prescriptions enable row level security;
 alter table health_stock_items enable row level security;
 alter table health_tickets enable row level security;
 alter table health_transactions enable row level security;
 alter table health_staff_members enable row level security;
+alter table health_app_settings enable row level security;
 
 drop policy if exists "allow all health_patients" on health_patients;
 drop policy if exists "allow all health_prescriptions" on health_prescriptions;
@@ -79,10 +87,61 @@ drop policy if exists "allow all health_stock_items" on health_stock_items;
 drop policy if exists "allow all health_tickets" on health_tickets;
 drop policy if exists "allow all health_transactions" on health_transactions;
 drop policy if exists "allow all health_staff_members" on health_staff_members;
+drop policy if exists "allow all health_app_settings" on health_app_settings;
 
-create policy "allow all health_patients" on health_patients for all using (true) with check (true);
-create policy "allow all health_prescriptions" on health_prescriptions for all using (true) with check (true);
-create policy "allow all health_stock_items" on health_stock_items for all using (true) with check (true);
-create policy "allow all health_tickets" on health_tickets for all using (true) with check (true);
-create policy "allow all health_transactions" on health_transactions for all using (true) with check (true);
-create policy "allow all health_staff_members" on health_staff_members for all using (true) with check (true);
+drop policy if exists "authenticated health_patients" on health_patients;
+drop policy if exists "authenticated health_prescriptions" on health_prescriptions;
+drop policy if exists "authenticated health_stock_items" on health_stock_items;
+drop policy if exists "authenticated health_tickets" on health_tickets;
+drop policy if exists "authenticated health_transactions" on health_transactions;
+drop policy if exists "authenticated health_staff_members" on health_staff_members;
+drop policy if exists "authenticated health_app_settings" on health_app_settings;
+
+create policy "authenticated health_patients" on health_patients
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_prescriptions" on health_prescriptions
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_stock_items" on health_stock_items
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_tickets" on health_tickets
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_transactions" on health_transactions
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_staff_members" on health_staff_members
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy "authenticated health_app_settings" on health_app_settings
+for all
+to authenticated
+using (true)
+with check (true);
+
+insert into public.health_app_settings (setting_key, setting_value)
+values ('accounting_access_password', 'compta123')
+on conflict (setting_key)
+do update set
+  setting_value = excluded.setting_value,
+  updated_at = now();

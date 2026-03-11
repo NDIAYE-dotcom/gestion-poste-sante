@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { Navbar } from './layout/Navbar'
 import { Sidebar } from './layout/Sidebar'
+import { AuthScreen } from './pages/AuthScreen'
 import { Accounting } from './pages/Accounting'
 import { Dashboard } from './pages/Dashboard'
 import { Patients } from './pages/Patients'
@@ -18,8 +19,8 @@ import {
   initialTickets,
   initialTransactions,
 } from './data/seedData'
-import { isSupabaseEnabled } from './lib/supabaseClient'
-import { deleteRecord, insertRecord, loadInitialData, updateRecord } from './services/database'
+import { isSupabaseEnabled, supabase } from './lib/supabaseClient'
+import { deleteRecord, insertRecord, loadAppSetting, loadInitialData, updateRecord } from './services/database'
 
 const pageTitles = {
   dashboard: 'Dashboard',
@@ -31,6 +32,8 @@ const pageTitles = {
   staff: 'Personnel',
   settings: 'Parametres',
 }
+
+const DEFAULT_ACCOUNTING_ACCESS_PASSWORD = import.meta.env.VITE_ACCOUNTING_ACCESS_PASSWORD || 'compta123'
 
 const parseTimeToMinutes = (value) => {
   if (typeof value !== 'string') {
@@ -54,6 +57,8 @@ const parseTimeToMinutes = (value) => {
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard')
+  const [session, setSession] = useState(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseEnabled)
   const [patients, setPatients] = useState(initialPatients)
   const [prescriptions, setPrescriptions] = useState(initialPrescriptions)
   const [stock, setStock] = useState(initialStock)
@@ -62,6 +67,51 @@ function App() {
   const [staff, setStaff] = useState(initialStaff)
   const [isLoading, setIsLoading] = useState(isSupabaseEnabled)
   const [syncError, setSyncError] = useState('')
+  const [accountingAccessPassword, setAccountingAccessPassword] = useState(DEFAULT_ACCOUNTING_ACCESS_PASSWORD)
+  const [isAccountingUnlocked, setIsAccountingUnlocked] = useState(false)
+  const [isAccountingPromptOpen, setIsAccountingPromptOpen] = useState(false)
+  const [accountingPassword, setAccountingPassword] = useState('')
+  const [accountingError, setAccountingError] = useState('')
+
+  useEffect(() => {
+    if (!isSupabaseEnabled || !supabase) {
+      setIsAuthLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const bootstrapSession = async () => {
+      const { data, error } = await supabase.auth.getSession()
+
+      if (!isMounted) {
+        return
+      }
+
+      if (error) {
+        const detail = error?.message || 'Erreur inconnue'
+        setSyncError(`Echec de verification session: ${detail}`)
+      }
+
+      setSession(data.session ?? null)
+      setIsAuthLoading(false)
+    }
+
+    bootstrapSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession ?? null)
+      setIsAuthLoading(false)
+      setSyncError('')
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     const syncFromSupabase = async () => {
@@ -70,7 +120,13 @@ function App() {
         return
       }
 
+      if (!session) {
+        setIsLoading(false)
+        return
+      }
+
       try {
+        setIsLoading(true)
         setSyncError('')
         const remoteData = await loadInitialData()
         if (!remoteData) {
@@ -83,6 +139,12 @@ function App() {
         setTickets(remoteData.tickets)
         setTransactions(remoteData.transactions)
         setStaff(remoteData.staff)
+
+        const remoteAccountingPassword = await loadAppSetting(
+          'accounting_access_password',
+          DEFAULT_ACCOUNTING_ACCESS_PASSWORD,
+        )
+        setAccountingAccessPassword(remoteAccountingPassword)
       } catch (error) {
         const detail = error?.message || error?.hint || 'Erreur inconnue'
         setSyncError(`Impossible de charger les donnees Supabase: ${detail}`)
@@ -92,7 +154,60 @@ function App() {
     }
 
     syncFromSupabase()
-  }, [])
+  }, [session])
+
+  const handleSignOut = async () => {
+    if (!supabase) {
+      return
+    }
+
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        throw error
+      }
+
+      setActivePage('dashboard')
+      setIsAccountingUnlocked(false)
+      setIsAccountingPromptOpen(false)
+      setAccountingPassword('')
+      setAccountingError('')
+    } catch (error) {
+      const detail = error?.message || 'Erreur inconnue'
+      setSyncError(`Echec de deconnexion: ${detail}`)
+    }
+  }
+
+  const handleNavigate = (page) => {
+    if (page !== 'accounting') {
+      setActivePage(page)
+      return
+    }
+
+    if (isAccountingUnlocked) {
+      setActivePage('accounting')
+      return
+    }
+
+    setAccountingPassword('')
+    setAccountingError('')
+    setIsAccountingPromptOpen(true)
+  }
+
+  const handleAccountingUnlock = (event) => {
+    event.preventDefault()
+
+    if (accountingPassword === accountingAccessPassword) {
+      setIsAccountingUnlocked(true)
+      setIsAccountingPromptOpen(false)
+      setAccountingPassword('')
+      setAccountingError('')
+      setActivePage('accounting')
+      return
+    }
+
+    setAccountingError('Mot de passe incorrect.')
+  }
 
   const dashboardMetrics = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -460,19 +575,62 @@ function App() {
     }
   }
 
+  if (isAuthLoading) {
+    return <AuthScreen />
+  }
+
+  if (!session) {
+    return <AuthScreen />
+  }
+
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar activePage={activePage} onNavigate={handleNavigate} />
       <div className="app-main">
         <Navbar
-          healthPostName="Poste de Sante Ndiaye"
+          healthPostName="Poste de Santé Jaxaay Parcelle"
           pageTitle={pageTitles[activePage]}
           notifications={notifications}
-          onNavigate={setActivePage}
+          onNavigate={handleNavigate}
+          currentUserEmail={session.user.email}
+          onSignOut={handleSignOut}
         />
         {isLoading ? <p className="sync-info">Chargement des donnees Supabase...</p> : null}
         {syncError ? <p className="sync-error">{syncError}</p> : null}
         {!isSupabaseEnabled ? <p className="sync-info">Mode local actif (Supabase non configure).</p> : null}
+
+        {isAccountingPromptOpen ? (
+          <div className="accounting-lock-overlay" role="dialog" aria-modal="true" aria-label="Acces comptabilite">
+            <form className="accounting-lock-card" onSubmit={handleAccountingUnlock}>
+              <h3>Acces Comptabilite</h3>
+              <p>Entrez le mot de passe pour ouvrir la comptabilite.</p>
+              <input
+                type="password"
+                value={accountingPassword}
+                onChange={(event) => setAccountingPassword(event.target.value)}
+                placeholder="Mot de passe"
+                autoFocus
+                required
+              />
+              {accountingError ? <span className="accounting-lock-error">{accountingError}</span> : null}
+              <div className="accounting-lock-actions">
+                <button type="submit">Valider</button>
+                <button
+                  type="button"
+                  className="accounting-lock-cancel"
+                  onClick={() => {
+                    setIsAccountingPromptOpen(false)
+                    setAccountingPassword('')
+                    setAccountingError('')
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+
         <main className="app-content">{renderPage()}</main>
       </div>
     </div>

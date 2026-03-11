@@ -199,3 +199,25 @@ export async function deleteRecord(tableKey, id) {
 
   return true
 }
+
+export async function loadAppSetting(settingKey, fallbackValue = '') {
+  if (!isSupabaseEnabled) {
+    return fallbackValue
+  }
+
+  const { data, error } = await supabase
+    .from('health_app_settings')
+    .select('setting_value')
+    .eq('setting_key', settingKey)
+    .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  if (!data?.setting_value) {
+    return fallbackValue
+  }
+
+  return data.setting_value
+}

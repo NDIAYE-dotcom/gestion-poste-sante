@@ -1,0 +1,119 @@
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(240, 180, 41, 0.22), transparent 26%),
+    radial-gradient(circle at 82% 10%, rgba(22, 119, 135, 0.2), transparent 28%),
+    linear-gradient(160deg, #ecf5f4 0%, #dcebea 100%);
+}
+
+.auth-screen__hero {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-screen__card {
+  width: min(100%, 460px);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(194, 220, 217, 0.9);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 54px rgba(13, 62, 74, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.auth-screen__brand {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.15rem;
+  text-align: center;
+}
+
+.auth-screen__logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 10px 18px rgba(9, 46, 57, 0.15);
+}
+
+.auth-screen__title {
+  margin: 0;
+  color: #4f6970;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.auth-screen__form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.auth-screen__field {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.auth-screen__field span {
+  color: #385b61;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.auth-screen__feedback {
+  margin: 0;
+  border-radius: 10px;
+  padding: 0.7rem 0.78rem;
+  font-size: 0.84rem;
+}
+
+.auth-screen__feedback--success {
+  background: #edf9f4;
+  border: 1px solid #c7e7d7;
+  color: #176148;
+}
+
+.auth-screen__feedback--error {
+  background: #fff4f4;
+  border: 1px solid #efcaca;
+  color: #a03535;
+}
+
+.auth-screen__feedback--warning {
+  background: #fff8eb;
+  border: 1px solid #edd59a;
+  color: #7f5b10;
+}
+
+@media (max-width: 640px) {
+  .auth-screen {
+    padding: 1rem 0.8rem;
+  }
+
+  .auth-screen__card {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 18px;
+  }
+
+  .auth-screen__brand {
+    margin-bottom: 1rem;
+  }
+
+  .auth-screen__logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .auth-screen__title {
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+  }
+}

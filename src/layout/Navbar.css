@@ -221,6 +221,20 @@
   gap: 0.6rem;
 }
 
+.navbar__logout {
+  background: #ffffff;
+  color: #13566d;
+  border: 1px solid #c8dcdc;
+  padding: 0.42rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.navbar__logout:hover {
+  background: #eff6f6;
+  color: #0f4d61;
+}
+
 .navbar__avatar {
   width: 34px;
   height: 34px;
@@ -307,6 +321,11 @@
 
   .navbar__profile div {
     display: none;
+  }
+
+  .navbar__logout {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.73rem;
   }
 
   .navbar__notify-panel {
