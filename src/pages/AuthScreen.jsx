@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { isSupabaseEnabled, supabase } from '../lib/supabaseClient'
+import { hasSupabaseAnonKey, hasSupabaseUrl, isSupabaseEnabled, supabase } from '../lib/supabaseClient'
 import './AuthScreen.css'
 
 export function AuthScreen() {
@@ -77,7 +77,9 @@ export function AuthScreen() {
             {errorMessage ? <p className="auth-screen__feedback auth-screen__feedback--error">{errorMessage}</p> : null}
             {!isSupabaseEnabled ? (
               <p className="auth-screen__feedback auth-screen__feedback--warning">
-                Auth indisponible: configurez `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` dans `.env`.
+                Auth indisponible: configurez les variables Supabase.
+                <br />
+                URL: {hasSupabaseUrl ? 'OK' : 'MANQUANTE'} | KEY: {hasSupabaseAnonKey ? 'OK' : 'MANQUANTE'}
               </p>
             ) : null}
 
