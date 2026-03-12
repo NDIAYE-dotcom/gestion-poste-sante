@@ -12,17 +12,21 @@
   grid-template-columns: minmax(190px, 1.2fr) minmax(190px, 1.2fr) minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(150px, 0.9fr) auto;
   gap: 0.6rem;
   align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .tickets__actions {
   display: flex;
   gap: 0.6rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
+  min-width: 0;
 }
 
 .tickets__actions button {
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .tickets__cancel {
