@@ -141,6 +141,11 @@
   font-size: 0.74rem;
 }
 
+.prescriptions__price {
+  font-weight: 700;
+  color: #1f5963 !important;
+}
+
 .prescriptions__stock-pill {
   border-radius: 999px;
   padding: 0.18rem 0.5rem;
@@ -158,6 +163,22 @@
   background: #fff1f1;
   color: #9f2f2f;
   border: 1px solid #f1cdcd;
+}
+
+.prescriptions__total {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  color: #184f59;
+}
+
+.prescriptions__total strong {
+  color: #126b79;
+}
+
+.prescriptions__total-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #5c787d;
 }
 
 .prescriptions .table-wrap table {

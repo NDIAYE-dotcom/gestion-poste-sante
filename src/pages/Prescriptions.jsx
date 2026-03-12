@@ -30,15 +30,45 @@ export function Prescriptions({ prescriptions, patients, stock, onAddPrescriptio
     })
 
     if (!matchedStock) {
-      return { status: 'missing', label: 'Non disponible', stockName: null }
+      return { status: 'missing', label: 'Non disponible', stockName: null, unitPrice: null }
     }
 
     if (Number(matchedStock.quantity) <= 0) {
-      return { status: 'missing', label: 'Rupture', stockName: matchedStock.name }
+      return {
+        status: 'missing',
+        label: 'Rupture',
+        stockName: matchedStock.name,
+        unitPrice: Number(matchedStock.salePrice),
+      }
     }
 
-    return { status: 'available', label: 'Disponible', stockName: matchedStock.name }
+    return {
+      status: 'available',
+      label: 'Disponible',
+      stockName: matchedStock.name,
+      unitPrice: Number(matchedStock.salePrice),
+    }
   }
+
+  const selectedPrescriptionDetails = selectedPrescription
+    ? String(selectedPrescription.medicines)
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((medicine, index) => {
+          const medicineStatus = getMedicineStatus(medicine)
+          return {
+            key: `${medicine}-${index}`,
+            medicine,
+            medicineStatus,
+          }
+        })
+    : []
+
+  const selectedPrescriptionTotal = selectedPrescriptionDetails.reduce((sum, entry) => {
+    const price = Number(entry.medicineStatus.unitPrice)
+    return Number.isFinite(price) ? sum + price : sum
+  }, 0)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -171,25 +201,29 @@ export function Prescriptions({ prescriptions, patients, stock, onAddPrescriptio
             </p>
 
             <div className="prescriptions__medicine-list">
-              {String(selectedPrescription.medicines)
-                .split(',')
-                .map((item) => item.trim())
-                .filter(Boolean)
-                .map((medicine, index) => {
-                  const medicineStatus = getMedicineStatus(medicine)
-                  return (
-                    <div key={`${medicine}-${index}`} className="prescriptions__medicine-row">
-                      <span>{medicine}</span>
-                      <div className="prescriptions__medicine-meta">
-                        {medicineStatus.stockName ? <small>{medicineStatus.stockName}</small> : null}
-                        <span className={`prescriptions__stock-pill ${medicineStatus.status}`}>
-                          {medicineStatus.label}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+              {selectedPrescriptionDetails.map((entry) => (
+                <div key={entry.key} className="prescriptions__medicine-row">
+                  <span>{entry.medicine}</span>
+                  <div className="prescriptions__medicine-meta">
+                    {entry.medicineStatus.stockName ? <small>{entry.medicineStatus.stockName}</small> : null}
+                    <small className="prescriptions__price">
+                      {entry.medicineStatus.unitPrice !== null
+                        ? `${entry.medicineStatus.unitPrice.toLocaleString()} FCFA`
+                        : '--'}
+                    </small>
+                    <span className={`prescriptions__stock-pill ${entry.medicineStatus.status}`}>
+                      {entry.medicineStatus.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
+            <p className="prescriptions__total">
+              Total ordonnance estime: <strong>{selectedPrescriptionTotal.toLocaleString()} FCFA</strong>
+            </p>
+            <p className="prescriptions__total-note">
+              Les medicaments non disponibles ne sont pas inclus dans le total.
+            </p>
           </article>
         </div>
       ) : null}
