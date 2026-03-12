@@ -34,6 +34,8 @@ const pageTitles = {
 }
 
 const DEFAULT_ACCOUNTING_ACCESS_PASSWORD = import.meta.env.VITE_ACCOUNTING_ACCESS_PASSWORD || 'compta123'
+const DEFAULT_SETTINGS_ACCESS_PASSWORD = import.meta.env.VITE_SETTINGS_ACCESS_PASSWORD || 'param123'
+const DEFAULT_TICKET_SERVICE = 'Ticket de consultation'
 
 const parseTimeToMinutes = (value) => {
   if (typeof value !== 'string') {
@@ -72,6 +74,11 @@ function App() {
   const [isAccountingPromptOpen, setIsAccountingPromptOpen] = useState(false)
   const [accountingPassword, setAccountingPassword] = useState('')
   const [accountingError, setAccountingError] = useState('')
+  const [settingsAccessPassword, setSettingsAccessPassword] = useState(DEFAULT_SETTINGS_ACCESS_PASSWORD)
+  const [isSettingsUnlocked, setIsSettingsUnlocked] = useState(false)
+  const [isSettingsPromptOpen, setIsSettingsPromptOpen] = useState(false)
+  const [settingsPassword, setSettingsPassword] = useState('')
+  const [settingsError, setSettingsError] = useState('')
 
   useEffect(() => {
     if (!isSupabaseEnabled || !supabase) {
@@ -144,7 +151,9 @@ function App() {
           'accounting_access_password',
           DEFAULT_ACCOUNTING_ACCESS_PASSWORD,
         )
+        const remoteSettingsPassword = await loadAppSetting('settings_access_password', DEFAULT_SETTINGS_ACCESS_PASSWORD)
         setAccountingAccessPassword(remoteAccountingPassword)
+        setSettingsAccessPassword(remoteSettingsPassword)
       } catch (error) {
         const detail = error?.message || error?.hint || 'Erreur inconnue'
         setSyncError(`Impossible de charger les donnees Supabase: ${detail}`)
@@ -172,6 +181,10 @@ function App() {
       setIsAccountingPromptOpen(false)
       setAccountingPassword('')
       setAccountingError('')
+      setIsSettingsUnlocked(false)
+      setIsSettingsPromptOpen(false)
+      setSettingsPassword('')
+      setSettingsError('')
     } catch (error) {
       const detail = error?.message || 'Erreur inconnue'
       setSyncError(`Echec de deconnexion: ${detail}`)
@@ -179,19 +192,31 @@ function App() {
   }
 
   const handleNavigate = (page) => {
-    if (page !== 'accounting') {
+    if (page !== 'accounting' && page !== 'settings') {
       setActivePage(page)
       return
     }
 
-    if (isAccountingUnlocked) {
+    if (page === 'accounting' && isAccountingUnlocked) {
       setActivePage('accounting')
       return
     }
 
-    setAccountingPassword('')
-    setAccountingError('')
-    setIsAccountingPromptOpen(true)
+    if (page === 'settings' && isSettingsUnlocked) {
+      setActivePage('settings')
+      return
+    }
+
+    if (page === 'accounting') {
+      setAccountingPassword('')
+      setAccountingError('')
+      setIsAccountingPromptOpen(true)
+      return
+    }
+
+    setSettingsPassword('')
+    setSettingsError('')
+    setIsSettingsPromptOpen(true)
   }
 
   const handleAccountingUnlock = (event) => {
@@ -207,6 +232,21 @@ function App() {
     }
 
     setAccountingError('Mot de passe incorrect.')
+  }
+
+  const handleSettingsUnlock = (event) => {
+    event.preventDefault()
+
+    if (settingsPassword === settingsAccessPassword) {
+      setIsSettingsUnlocked(true)
+      setIsSettingsPromptOpen(false)
+      setSettingsPassword('')
+      setSettingsError('')
+      setActivePage('settings')
+      return
+    }
+
+    setSettingsError('Mot de passe incorrect.')
   }
 
   const dashboardMetrics = useMemo(() => {
@@ -332,17 +372,26 @@ function App() {
   }
 
   const addPrescription = async (prescription) => {
+    const normalizedPrescription = {
+      ...prescription,
+      isSold: false,
+      soldDate: null,
+    }
+
     if (!isSupabaseEnabled) {
-      setPrescriptions((prev) => [{ id: Date.now(), ...prescription }, ...prev])
-      return
+      const savedLocal = { id: Date.now(), ...normalizedPrescription }
+      setPrescriptions((prev) => [savedLocal, ...prev])
+      return savedLocal
     }
 
     try {
-      const saved = await insertRecord('prescriptions', prescription)
+      const saved = await insertRecord('prescriptions', normalizedPrescription)
       setPrescriptions((prev) => [saved, ...prev])
+      return saved
     } catch (error) {
       const detail = error?.message || error?.hint || 'Erreur inconnue'
       setSyncError(`Echec d'ajout ordonnance: ${detail}`)
+      return null
     }
   }
 
@@ -391,10 +440,124 @@ function App() {
     }
   }
 
+  const sellFromPrescription = async ({ prescriptionId, patientName, date, items }) => {
+    const prescription = prescriptions.find((item) => item.id === Number(prescriptionId))
+    if (!prescription) {
+      return { success: false, message: 'Ordonnance introuvable.' }
+    }
+
+    if (prescription.isSold) {
+      return { success: false, message: 'Cette ordonnance a deja ete vendue.' }
+    }
+
+    const normalizedItems = items
+      .map((item) => ({
+        stockId: Number(item.stockId),
+        quantity: Number(item.quantity),
+      }))
+      .filter((item) => Number.isFinite(item.stockId) && Number.isFinite(item.quantity) && item.quantity > 0)
+
+    if (normalizedItems.length === 0) {
+      return { success: false, message: 'Aucun medicament valide a vendre.' }
+    }
+
+    const mergedItems = normalizedItems.reduce((acc, item) => {
+      const existing = acc.find((entry) => entry.stockId === item.stockId)
+      if (existing) {
+        existing.quantity += item.quantity
+      } else {
+        acc.push({ ...item })
+      }
+      return acc
+    }, [])
+
+    const updates = []
+    let totalAmount = 0
+
+    for (const line of mergedItems) {
+      const stockItem = stock.find((medicine) => medicine.id === line.stockId)
+      if (!stockItem) {
+        return { success: false, message: 'Un medicament de l\'ordonnance est introuvable en stock.' }
+      }
+
+      if (Number(stockItem.quantity) < line.quantity) {
+        return {
+          success: false,
+          message: `Stock insuffisant pour ${stockItem.name}. Disponible: ${stockItem.quantity}.`,
+        }
+      }
+
+      totalAmount += Number(stockItem.salePrice) * line.quantity
+      updates.push({
+        ...stockItem,
+        quantity: Number(stockItem.quantity) - line.quantity,
+      })
+    }
+
+    const saleTransaction = {
+      type: 'income',
+      label: `Vente ordonnance ${patientName} (#${prescriptionId})`,
+      amount: totalAmount,
+      date,
+    }
+
+    const updatedPrescription = {
+      ...prescription,
+      isSold: true,
+      soldDate: date,
+    }
+
+    if (!isSupabaseEnabled) {
+      setStock((prev) =>
+        prev.map((medicine) => {
+          const updated = updates.find((item) => item.id === medicine.id)
+          return updated ? updated : medicine
+        }),
+      )
+      setTransactions((prev) => [{ id: Date.now(), ...saleTransaction }, ...prev])
+      setPrescriptions((prev) =>
+        prev.map((item) => (item.id === updatedPrescription.id ? updatedPrescription : item)),
+      )
+      setSyncError('')
+      return {
+        success: true,
+        message: `Vente enregistree. Total: ${totalAmount.toLocaleString()} FCFA.`,
+      }
+    }
+
+    try {
+      const savedUpdates = await Promise.all(updates.map((item) => updateRecord('stock', item.id, item)))
+      const savedTransaction = await insertRecord('transactions', saleTransaction)
+      const savedPrescription = await updateRecord('prescriptions', updatedPrescription.id, updatedPrescription)
+
+      setStock((prev) =>
+        prev.map((medicine) => {
+          const updated = savedUpdates.find((item) => item.id === medicine.id)
+          return updated ? updated : medicine
+        }),
+      )
+      setTransactions((prev) => [savedTransaction, ...prev])
+      setPrescriptions((prev) =>
+        prev.map((item) => (item.id === savedPrescription.id ? savedPrescription : item)),
+      )
+      setSyncError('')
+      return {
+        success: true,
+        message: `Vente enregistree. Total: ${totalAmount.toLocaleString()} FCFA.`,
+      }
+    } catch (error) {
+      const detail = error?.message || error?.hint || 'Erreur inconnue'
+      setSyncError(`Echec de vente ordonnance: ${detail}`)
+      return { success: false, message: `Echec de la vente: ${detail}` }
+    }
+  }
+
   const addTicket = async (ticket) => {
     const newTicket = {
       id: Date.now(),
       ticketNumber: `TCK-${Date.now().toString().slice(-6)}`,
+      medicines: '',
+      consultation: DEFAULT_TICKET_SERVICE,
       ...ticket,
     }
 
@@ -411,8 +574,8 @@ function App() {
       const savedTicket = await insertRecord('tickets', {
         ticketNumber: newTicket.ticketNumber,
         patientName: newTicket.patientName,
-        medicines: newTicket.medicines,
-        consultation: newTicket.consultation,
+        medicines: '',
+        consultation: DEFAULT_TICKET_SERVICE,
         totalAmount: newTicket.totalAmount,
         date: newTicket.date,
       })
@@ -429,12 +592,17 @@ function App() {
   }
 
   const updateTicket = async (ticket) => {
-    const linkedTransactionPayload = buildTicketTransaction(ticket)
+    const normalizedTicket = {
+      ...ticket,
+      medicines: '',
+      consultation: ticket.consultation || DEFAULT_TICKET_SERVICE,
+    }
+    const linkedTransactionPayload = buildTicketTransaction(normalizedTicket)
 
     if (!isSupabaseEnabled) {
-      setTickets((prev) => prev.map((item) => (item.id === ticket.id ? ticket : item)))
+      setTickets((prev) => prev.map((item) => (item.id === normalizedTicket.id ? normalizedTicket : item)))
       setTransactions((prev) => {
-        const linkedTransaction = findLinkedTicketTransaction(ticket.ticketNumber, prev)
+        const linkedTransaction = findLinkedTicketTransaction(normalizedTicket.ticketNumber, prev)
         if (!linkedTransaction) {
           return [{ id: Date.now() + 2, ...linkedTransactionPayload }, ...prev]
         }
@@ -446,12 +614,12 @@ function App() {
         )
       })
       setSyncError('')
-      return ticket
+      return normalizedTicket
     }
 
     try {
-      const savedTicket = await updateRecord('tickets', ticket.id, ticket)
-      const linkedTransaction = findLinkedTicketTransaction(ticket.ticketNumber)
+      const savedTicket = await updateRecord('tickets', normalizedTicket.id, normalizedTicket)
+      const linkedTransaction = findLinkedTicketTransaction(normalizedTicket.ticketNumber)
       let savedTransaction = null
 
       if (linkedTransaction) {
@@ -550,9 +718,11 @@ function App() {
         return (
           <Pharmacy
             stock={stock}
+            prescriptions={prescriptions}
             onAddMedicine={addMedicine}
             onUpdateMedicine={updateMedicine}
             onDeleteMedicine={deleteMedicine}
+            onSellFromPrescription={sellFromPrescription}
           />
         )
       case 'tickets':
@@ -622,6 +792,38 @@ function App() {
                     setIsAccountingPromptOpen(false)
                     setAccountingPassword('')
                     setAccountingError('')
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+
+        {isSettingsPromptOpen ? (
+          <div className="accounting-lock-overlay" role="dialog" aria-modal="true" aria-label="Acces parametres">
+            <form className="accounting-lock-card" onSubmit={handleSettingsUnlock}>
+              <h3>Acces Parametres</h3>
+              <p>Entrez le mot de passe pour ouvrir les parametres.</p>
+              <input
+                type="password"
+                value={settingsPassword}
+                onChange={(event) => setSettingsPassword(event.target.value)}
+                placeholder="Mot de passe"
+                autoFocus
+                required
+              />
+              {settingsError ? <span className="accounting-lock-error">{settingsError}</span> : null}
+              <div className="accounting-lock-actions">
+                <button type="submit">Valider</button>
+                <button
+                  type="button"
+                  className="accounting-lock-cancel"
+                  onClick={() => {
+                    setIsSettingsPromptOpen(false)
+                    setSettingsPassword('')
+                    setSettingsError('')
                   }}
                 >
                   Annuler

@@ -20,8 +20,13 @@ create table if not exists health_prescriptions (
   medicines text not null,
   dosage text not null,
   date date not null,
+  is_sold boolean not null default false,
+  sold_date date,
   created_at timestamptz not null default now()
 );
+
+alter table health_prescriptions add column if not exists is_sold boolean not null default false;
+alter table health_prescriptions add column if not exists sold_date date;
 
 create table if not exists health_stock_items (
   id bigint generated always as identity primary key,
@@ -140,7 +145,9 @@ using (true)
 with check (true);
 
 insert into public.health_app_settings (setting_key, setting_value)
-values ('accounting_access_password', 'compta123')
+values
+  ('accounting_access_password', 'compta123'),
+  ('settings_access_password', 'param123')
 on conflict (setting_key)
 do update set
   setting_value = excluded.setting_value,

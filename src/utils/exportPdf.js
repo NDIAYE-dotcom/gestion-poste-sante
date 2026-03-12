@@ -3,6 +3,15 @@
 const POST_NAME = 'Poste de Santé'
 const ACCENT = [33, 150, 243] // bleu
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function addHeader(doc, title) {
   doc.setFillColor(...ACCENT)
   doc.rect(0, 0, 210, 22, 'F')
@@ -32,52 +41,156 @@ function addFooter(doc) {
 
 // ─── Ticket unique ────────────────────────────────────────────────────────────
 export async function exportTicketPdf(ticket) {
-  const { jsPDF } = await import('jspdf')
-  const doc = new jsPDF({ unit: 'mm', format: 'a5' })
-  addHeader(doc, 'Ticket de caisse')
+  const printWindow = window.open('', '_blank', 'width=420,height=720')
 
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Ticket N°:`, 14, 34)
-  doc.setFont('helvetica', 'normal')
-  doc.text(String(ticket.ticketNumber ?? ticket.id ?? '—'), 48, 34)
+  if (!printWindow) {
+    return
+  }
 
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Date:`, 14, 41)
-  doc.setFont('helvetica', 'normal')
-  doc.text(String(ticket.date ?? '—'), 48, 41)
+  const ticketNumber = escapeHtml(ticket.ticketNumber ?? ticket.id ?? '—')
+  const ticketDate = escapeHtml(ticket.date ?? '—')
+  const patientName = escapeHtml(ticket.patientName ?? '—')
+  const ticketLabel = escapeHtml(ticket.consultation ?? 'Ticket de consultation')
+  const totalAmount = escapeHtml(`${ticket.totalAmount ?? 0} FCFA`)
+  const printedAt = escapeHtml(new Date().toLocaleDateString('fr-FR'))
 
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Patient:`, 14, 48)
-  doc.setFont('helvetica', 'normal')
-  doc.text(String(ticket.patientName ?? '—'), 48, 48)
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Ticket ${ticketNumber}</title>
+        <style>
+          :root {
+            color-scheme: light;
+          }
 
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Consultation:`, 14, 55)
-  doc.setFont('helvetica', 'normal')
-  doc.text(String(ticket.consultation ?? '—'), 48, 55)
+          * {
+            box-sizing: border-box;
+          }
 
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Médicaments:`, 14, 62)
-  doc.setFont('helvetica', 'normal')
-  const medicLines = doc.splitTextToSize(String(ticket.medicines ?? '—'), 90)
-  doc.text(medicLines, 48, 62)
+          body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6f6;
+            color: #163e47;
+          }
 
-  const afterMedic = 62 + medicLines.length * 6
+          .sheet {
+            width: 80mm;
+            margin: 0 auto;
+            padding: 10mm 8mm;
+            background: #ffffff;
+          }
 
-  doc.setDrawColor(...ACCENT)
-  doc.setLineWidth(0.5)
-  doc.line(14, afterMedic + 2, 134, afterMedic + 2)
+          .header {
+            text-align: center;
+            border-bottom: 2px dashed #9ab8bd;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+          }
 
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...ACCENT)
-  doc.text(`Total:`, 14, afterMedic + 10)
-  doc.text(`${ticket.totalAmount ?? 0} FCFA`, 48, afterMedic + 10)
-  doc.setTextColor(0, 0, 0)
+          .header h1 {
+            margin: 0;
+            font-size: 18px;
+          }
 
-  addFooter(doc)
-  doc.save(`ticket-${ticket.ticketNumber ?? ticket.id}.pdf`)
+          .header p {
+            margin: 4px 0 0;
+            font-size: 12px;
+          }
+
+          .title {
+            margin: 0 0 10px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+          }
+
+          .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 5px 0;
+            border-bottom: 1px dashed #d4e2e0;
+            font-size: 13px;
+          }
+
+          .row strong {
+            color: #295863;
+          }
+
+          .total {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #167787;
+            display: flex;
+            justify-content: space-between;
+            font-size: 17px;
+            font-weight: 700;
+            color: #167787;
+          }
+
+          .footer {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11px;
+            color: #648287;
+          }
+
+          @page {
+            size: 80mm auto;
+            margin: 6mm;
+          }
+
+          @media print {
+            body {
+              background: #ffffff;
+            }
+
+            .sheet {
+              width: auto;
+              margin: 0;
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <main class="sheet">
+          <header class="header">
+            <h1>${escapeHtml(POST_NAME)}</h1>
+            <p>Gestion interne</p>
+          </header>
+
+          <h2 class="title">Ticket de caisse</h2>
+
+          <div class="row"><strong>N ticket</strong><span>${ticketNumber}</span></div>
+          <div class="row"><strong>Date</strong><span>${ticketDate}</span></div>
+          <div class="row"><strong>Patient</strong><span>${patientName}</span></div>
+          <div class="row"><strong>Objet</strong><span>${ticketLabel}</span></div>
+
+          <div class="total"><span>Total</span><span>${totalAmount}</span></div>
+
+          <footer class="footer">
+            <div>Merci de conserver ce ticket</div>
+            <div>Imprime le ${printedAt}</div>
+          </footer>
+        </main>
+        <script>
+          window.addEventListener('load', () => {
+            setTimeout(() => {
+              window.print()
+              window.onafterprint = () => window.close()
+            }, 150)
+          })
+        </script>
+      </body>
+    </html>
+  `)
+
+  printWindow.document.close()
 }
 
 // ─── Liste tickets ────────────────────────────────────────────────────────────
@@ -89,12 +202,11 @@ export async function exportTicketListPdf(tickets) {
 
   autoTable(doc, {
     startY: 28,
-    head: [['N° Ticket', 'Patient', 'Médicaments', 'Consultation', 'Montant (FCFA)', 'Date']],
+    head: [['N° Ticket', 'Patient', 'Objet', 'Montant (FCFA)', 'Date']],
     body: tickets.map((t) => [
       t.ticketNumber ?? t.id,
       t.patientName ?? '—',
-      t.medicines ?? '—',
-      t.consultation ?? '—',
+      t.consultation ?? 'Ticket de consultation',
       `${t.totalAmount ?? 0}`,
       t.date ?? '—',
     ]),

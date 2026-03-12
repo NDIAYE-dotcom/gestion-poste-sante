@@ -40,6 +40,8 @@ const ADAPTERS = {
       medicines: item.medicines,
       dosage: item.dosage,
       date: item.date,
+      is_sold: item.isSold ?? false,
+      sold_date: item.soldDate ?? null,
     }),
     fromDb: (row) => ({
       id: row.id,
@@ -48,6 +50,8 @@ const ADAPTERS = {
       medicines: row.medicines,
       dosage: row.dosage,
       date: row.date,
+      isSold: row.is_sold ?? false,
+      soldDate: row.sold_date ?? null,
     }),
   },
   stock: {

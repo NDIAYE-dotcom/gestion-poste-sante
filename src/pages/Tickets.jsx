@@ -4,8 +4,6 @@ import './Tickets.css'
 
 const emptyTicket = {
   patientName: '',
-  medicines: '',
-  consultation: '',
   totalAmount: '',
   date: new Date().toISOString().slice(0, 10),
 }
@@ -36,8 +34,6 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
     setEditingTicketId(ticket.id)
     setFormData({
       patientName: ticket.patientName,
-      medicines: ticket.medicines,
-      consultation: ticket.consultation,
       totalAmount: ticket.totalAmount,
       date: ticket.date,
     })
@@ -67,20 +63,8 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
             ))}
           </select>
           <input
-            placeholder="Medicaments achetes"
-            value={formData.medicines}
-            onChange={(event) => setFormData((prev) => ({ ...prev, medicines: event.target.value }))}
-            required
-          />
-          <input
-            placeholder="Consultation"
-            value={formData.consultation}
-            onChange={(event) => setFormData((prev) => ({ ...prev, consultation: event.target.value }))}
-            required
-          />
-          <input
             type="number"
-            placeholder="Montant total"
+            placeholder="Montant du ticket"
             value={formData.totalAmount}
             onChange={(event) => setFormData((prev) => ({ ...prev, totalAmount: event.target.value }))}
             required
@@ -103,7 +87,7 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
               disabled={!lastTicket}
               onClick={() => lastTicket && exportTicketPdf(lastTicket)}
             >
-              Telecharger PDF
+              Imprimer ticket
             </button>
           </div>
         </form>
@@ -118,14 +102,13 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
             </button>
           )}
         </div>
+        <p className="tickets__hint">Le ticket de caisse est delivre avant la consultation et reste separe de l'ordonnance.</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>N ticket</th>
                 <th>Patient</th>
-                <th>Medicaments</th>
-                <th>Consultation</th>
                 <th>Montant</th>
                 <th>Date</th>
                 <th>Actions</th>
@@ -136,8 +119,6 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
                 <tr key={ticket.id}>
                   <td data-label="N ticket">{ticket.ticketNumber}</td>
                   <td data-label="Patient">{ticket.patientName}</td>
-                  <td data-label="Medicaments">{ticket.medicines}</td>
-                  <td data-label="Consultation">{ticket.consultation}</td>
                   <td data-label="Montant">{ticket.totalAmount} FCFA</td>
                   <td data-label="Date">{ticket.date}</td>
                   <td data-label="Actions">
@@ -153,10 +134,10 @@ export function Tickets({ tickets, patients, onAddTicket, onUpdateTicket }) {
                       <button
                         type="button"
                         className="btn-pdf-row"
-                        title="Telecharger PDF"
+                        title="Imprimer le ticket"
                         onClick={() => exportTicketPdf(ticket)}
                       >
-                        PDF
+                        Imprimer
                       </button>
                     </div>
                   </td>

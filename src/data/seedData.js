@@ -33,6 +33,8 @@ export const initialPrescriptions = [
     medicines: 'Paracetamol, Coartem',
     dosage: '2 prises par jour pendant 3 jours',
     date: today,
+    isSold: false,
+    soldDate: null,
   },
 ]
 
@@ -62,8 +64,8 @@ export const initialTickets = [
     id: 1,
     ticketNumber: 'TCK-001120',
     patientName: 'Mamadou Sarr',
-    medicines: 'Amlodipine',
-    consultation: 'Controle tension',
+    medicines: '',
+    consultation: 'Ticket de consultation',
     totalAmount: 4500,
     date: today,
   },
