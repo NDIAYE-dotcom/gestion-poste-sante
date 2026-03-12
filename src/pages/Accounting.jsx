@@ -11,18 +11,33 @@ const emptyTransaction = {
 export function Accounting({ transactions, onAddTransaction }) {
   const [formData, setFormData] = useState(emptyTransaction)
 
-  const dailyTotal = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    return transactions
-      .filter((t) => t.type === 'income' && t.date === today)
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-  }, [transactions])
+  const periodStats = useMemo(() => {
+    const now = new Date()
+    const today = now.toISOString().slice(0, 10)
+    const currentMonth = now.toISOString().slice(0, 7)
+    const currentYear = now.toISOString().slice(0, 4)
 
-  const monthlyIncome = useMemo(() => {
-    const month = new Date().toISOString().slice(0, 7)
-    return transactions
-      .filter((t) => t.type === 'income' && t.date.startsWith(month))
-      .reduce((sum, t) => sum + Number(t.amount), 0)
+    const compute = (predicate) => {
+      const inPeriod = transactions.filter(predicate)
+      const income = inPeriod
+        .filter((item) => item.type === 'income')
+        .reduce((sum, item) => sum + Number(item.amount), 0)
+      const expense = inPeriod
+        .filter((item) => item.type === 'expense')
+        .reduce((sum, item) => sum + Number(item.amount), 0)
+
+      return {
+        income,
+        expense,
+        net: income - expense,
+      }
+    }
+
+    return {
+      daily: compute((item) => item.date === today),
+      monthly: compute((item) => item.date.startsWith(currentMonth)),
+      yearly: compute((item) => item.date.startsWith(currentYear)),
+    }
   }, [transactions])
 
   const handleSubmit = (event) => {
@@ -34,13 +49,44 @@ export function Accounting({ transactions, onAddTransaction }) {
   return (
     <section className="accounting">
       <div className="accounting__stats">
-        <article className="stat-card">
-          <p>Recettes journalieres</p>
-          <strong>{dailyTotal.toLocaleString()} FCFA</strong>
+        <article className="stat-card stat-card--daily">
+          <p>Journalier</p>
+          <div className="stat-card__grid">
+            <span>Entrees</span>
+            <strong className="stat-value stat-value--income">{periodStats.daily.income.toLocaleString()} FCFA</strong>
+            <span>Sorties</span>
+            <strong className="stat-value stat-value--expense">{periodStats.daily.expense.toLocaleString()} FCFA</strong>
+            <span>Solde net</span>
+            <strong className={`stat-value ${periodStats.daily.net >= 0 ? 'stat-value--income' : 'stat-value--expense'}`}>
+              {periodStats.daily.net.toLocaleString()} FCFA
+            </strong>
+          </div>
         </article>
-        <article className="stat-card">
-          <p>Revenus mensuels</p>
-          <strong>{monthlyIncome.toLocaleString()} FCFA</strong>
+        <article className="stat-card stat-card--monthly">
+          <p>Mensuel</p>
+          <div className="stat-card__grid">
+            <span>Entrees</span>
+            <strong className="stat-value stat-value--income">{periodStats.monthly.income.toLocaleString()} FCFA</strong>
+            <span>Sorties</span>
+            <strong className="stat-value stat-value--expense">{periodStats.monthly.expense.toLocaleString()} FCFA</strong>
+            <span>Solde net</span>
+            <strong className={`stat-value ${periodStats.monthly.net >= 0 ? 'stat-value--income' : 'stat-value--expense'}`}>
+              {periodStats.monthly.net.toLocaleString()} FCFA
+            </strong>
+          </div>
+        </article>
+        <article className="stat-card stat-card--yearly">
+          <p>Annuel</p>
+          <div className="stat-card__grid">
+            <span>Entrees</span>
+            <strong className="stat-value stat-value--income">{periodStats.yearly.income.toLocaleString()} FCFA</strong>
+            <span>Sorties</span>
+            <strong className="stat-value stat-value--expense">{periodStats.yearly.expense.toLocaleString()} FCFA</strong>
+            <span>Solde net</span>
+            <strong className={`stat-value ${periodStats.yearly.net >= 0 ? 'stat-value--income' : 'stat-value--expense'}`}>
+              {periodStats.yearly.net.toLocaleString()} FCFA
+            </strong>
+          </div>
         </article>
       </div>
 
