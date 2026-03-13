@@ -1,5 +1,6 @@
 .auth-screen {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 1.5rem;
@@ -94,7 +95,9 @@
 
 @media (max-width: 640px) {
   .auth-screen {
+    align-items: start;
     padding: 1rem 0.8rem;
+    overflow-y: auto;
   }
 
   .auth-screen__card {

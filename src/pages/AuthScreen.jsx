@@ -44,7 +44,7 @@ export function AuthScreen() {
         <div className="auth-screen__card">
           <div className="auth-screen__brand">
             <img src="/logosante-02.png" alt="Logo Poste de Santé" className="auth-screen__logo" />
-            <p className="auth-screen__title">Poste de Santé Jaxaay Parcelle</p>
+            <p className="auth-screen__title">Poste de Santé Jaxaay Parcelles</p>
           </div>
 
           <form className="auth-screen__form" onSubmit={handleSubmit}>

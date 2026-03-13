@@ -7,6 +7,7 @@
 
 .app-shell {
   height: 100vh;
+  height: 100dvh;
   display: flex;
   background: radial-gradient(circle at 0% 0%, #d8efec 0, transparent 38%),
     linear-gradient(180deg, #f5f9f8 0%, #edf4f3 100%);
@@ -205,6 +206,14 @@ textarea {
   transition: border-color var(--motion-fast) var(--ease-modern),
     box-shadow var(--motion-fast) var(--ease-modern),
     background-color var(--motion-fast) var(--ease-modern);
+}
+
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 input:focus,

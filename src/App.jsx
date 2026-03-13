@@ -758,7 +758,7 @@ function App() {
       <Sidebar activePage={activePage} onNavigate={handleNavigate} />
       <div className="app-main">
         <Navbar
-          healthPostName="Poste de Santé Jaxaay Parcelle"
+          healthPostName="Poste de Santé Jaxaay Parcelles"
           pageTitle={pageTitles[activePage]}
           notifications={notifications}
           onNavigate={handleNavigate}
