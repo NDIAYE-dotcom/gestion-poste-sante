@@ -496,7 +496,7 @@ function App() {
 
     const saleTransaction = {
       type: 'income',
-      label: `Vente ordonnance ${patientName} (#${prescriptionId})`,
+      label: `Vente pharmacie - ${patientName} (#${prescriptionId})`,
       amount: totalAmount,
       date,
     }

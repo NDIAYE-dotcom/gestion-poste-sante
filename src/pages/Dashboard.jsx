@@ -1,6 +1,11 @@
 import './Dashboard.css'
 
 export function Dashboard({ metrics, transactions }) {
+  const cashBalance = transactions.reduce((sum, item) => {
+    const amount = Number(item.amount) || 0
+    return item.type === 'income' ? sum + amount : sum - amount
+  }, 0)
+
   const incomeTransactions = transactions
     .filter((t) => t.type === 'income')
     .slice(0, 7)
@@ -12,11 +17,12 @@ export function Dashboard({ metrics, transactions }) {
   const latestIncome = incomeTransactions[incomeTransactions.length - 1] ?? null
 
   const cards = [
+    { label: 'Caisse actuelle', value: `${cashBalance.toLocaleString()} FCFA`, tone: 'mint' },
     { label: 'Patients du jour', value: metrics.patientsToday, tone: 'sky' },
     { label: 'Recettes journalieres', value: `${metrics.dailyRevenue.toLocaleString()} FCFA`, tone: 'teal' },
     { label: 'Ordonnances', value: metrics.prescriptionsToday, tone: 'sand' },
     { label: 'Medicaments en rupture', value: metrics.outOfStock, tone: 'rose' },
-    { label: 'Personnel en service', value: metrics.onDuty, tone: 'mint' },
+    { label: 'Personnel en service', value: metrics.onDuty, tone: 'sky' },
   ]
 
   return (

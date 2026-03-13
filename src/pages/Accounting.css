@@ -7,6 +7,21 @@
   min-width: 0;
 }
 
+.accounting__cash-balance {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.accounting__cash-balance.is-positive {
+  color: #1a7a53;
+}
+
+.accounting__cash-balance.is-negative {
+  color: #9f3535;
+}
+
 .accounting__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

@@ -11,6 +11,13 @@ const emptyTransaction = {
 export function Accounting({ transactions, onAddTransaction }) {
   const [formData, setFormData] = useState(emptyTransaction)
 
+  const cashBalance = useMemo(() => {
+    return transactions.reduce((sum, item) => {
+      const amount = Number(item.amount) || 0
+      return item.type === 'income' ? sum + amount : sum - amount
+    }, 0)
+  }, [transactions])
+
   const periodStats = useMemo(() => {
     const now = new Date()
     const today = now.toISOString().slice(0, 10)
@@ -48,6 +55,13 @@ export function Accounting({ transactions, onAddTransaction }) {
 
   return (
     <section className="accounting">
+      <div className="panel">
+        <h3>Caisse actuelle</h3>
+        <p className={`accounting__cash-balance ${cashBalance >= 0 ? 'is-positive' : 'is-negative'}`}>
+          {cashBalance.toLocaleString()} FCFA
+        </p>
+      </div>
+
       <div className="accounting__stats">
         <article className="stat-card stat-card--daily">
           <p>Journalier</p>
