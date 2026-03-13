@@ -95,9 +95,9 @@
 
 @media (max-width: 640px) {
   .auth-screen {
-    align-items: start;
     padding: 1rem 0.8rem;
     overflow-y: auto;
+    height: 100dvh;
   }
 
   .auth-screen__card {
